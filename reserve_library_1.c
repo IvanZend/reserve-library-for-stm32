@@ -7,12 +7,12 @@ void UART_message_check(UART_HandleTypeDef *huart_pointer)
 	}
 }
 
-uint64_t unite_digits_sequence(uint8_t number_of_values, uint8_t *byte_array_pointer)
+uint32_t unite_digits_sequence(uint8_t number_of_values, uint8_t *byte_array_pointer)
 {
-	uint64_t summary_value = 0;
-	for (int i = 8; i <= 0; i--)
+	uint32_t summary_value = 0;
+	for (int i = number_of_values - 1; i >= 0; i--)
 	{
-		summary_value = summary_value + ((*(byte_array_pointer + i)) << i);
+		summary_value = summary_value | (byte_array_pointer[i] << ((number_of_values - 1 - i)*8));
 	}
 	return summary_value;
 }
@@ -90,5 +90,57 @@ void flash_vrite_page(uint32_t Addr, uint64_t value_to_write)
 	if (value_from_memory)
 	{
 
+	}
+}
+
+
+
+_Bool compare_int_and_char_arrays(uint8_t* int_array_pointer, char* char_array_pointer)
+{
+	_Bool arrays_match = 1;
+	int i = 1;
+	while (int_array_pointer[i] != CHAR_CODE_UART_MESSAGE_END)
+	{
+		if(int_array_pointer[i] != char_array_pointer[i-1])
+		{
+			arrays_match = 0;
+		}
+		i++;
+	}
+
+	return arrays_match;
+}
+
+
+// добавляем сообщение в очередь на отправку
+void add_char_message_to_TX_queue_buffer(uint16_t message_to_transmit_size, char* message_to_transmit_pointer)
+{
+	for (int i = 0; i <= message_to_transmit_size; i++)								// записываем содержимое отправляемого сообщения
+	{
+		TX_queue_buffer[TX_queue_buffer_write_counter][i] = message_to_transmit_pointer[i];		// посимвольно записываем пришедшее сообщение в очередь на отправку
+	}
+	TX_string_lenght_buffer[TX_queue_buffer_write_counter] = message_to_transmit_size;
+	TX_queue_buffer_write_counter++;									// инкрементируем счётчик записи элемента в очереди на отправку
+	if (TX_queue_buffer_write_counter > TX_QUEUE_BUFFER_SIZE)			// если превышен максимальный размер в очереди на отправку
+	{
+		UART_error_handler(TX_QUEUE_OVERFLOW);							// ошибка: очередь на отправку переполнена
+		TX_queue_buffer_write_counter = 0;
+	}
+}
+
+
+// обработчик прерывания для отправки сообщения по UART
+void transmit_messages_IT_handler(void)
+{
+	if (TX_string_lenght_buffer[0] != 0)			// если в очереди на отправку содержится хотя бы одно сообщение
+	{
+		for (int i = 0; i < TX_queue_buffer_write_counter; i++)			// до тех пор пока мы не достигнем количества записанных сообщений в очередь
+		{
+			for (int ii = 0; ii < (TX_string_lenght_buffer[i]); ii++)
+			{
+				HAL_UART_Transmit(&huart2, &TX_queue_buffer[i][ii], UART_TX_MESSAGE_SIZE, UART_TIMEOUT);
+			}
+		}
+		TX_queue_buffer_write_counter = 0;								// когда отправили все сообщения из очереди, обнуляем счётчик сообщений
 	}
 }

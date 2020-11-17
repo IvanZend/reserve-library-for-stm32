@@ -1,0 +1,13 @@
+# Terminal macro file
+return_test$0D
+##get_firmware_version$0A
+C$0D
+##V$0A
+##N$0A
+O$0D
+?$0D
+N$0D
+t32180000000000000003$0D
+T11223344401020304$0D
+
+
