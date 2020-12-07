@@ -2,35 +2,24 @@
 #ifndef INC_UNIVERSAL_EXTERN_LIB_1_H_
 #define INC_UNIVERSAL_EXTERN_LIB_1_H_
 
-#include "main.h"
+//#include "main.h"
 
 
-#define BUTTON_PORT_DEFAULT 						GPIOA
-#define BUTTON_PIN_DEFAULT 							BUTTON_1_Pin
 #define BUTTON_RELEASED_SIGNAL_LEVEL_DEFAULT 		LOGIC_LEVEL_LOW
 #define BUTTON_BOUNCE_FILTER_COUNTS_DEFAULT 		5
 #define BUTTON_LONG_PRESS_COUNTS_DEFAULT 			20
-#define LIMIT_SWITCH_PORT_DEFAULT	 				GPIOA
-#define LIMIT_SWTICH_PIN_DEFAULT 					LIMIT_SWITCH_Pin
 #define LIMIT_SWTICH_LOGIC_INVERTED_DEFAULT 		0
-#define MOTOR_STEP_PORT_DEFAULT						GPIOF
-#define MOTOR_STEP_PIN_DEFAULT 						MOTOR_STEP_Pin
-#define MOTOR_DIR_PORT_DEFAULT 						GPIOF
-#define MOTOR_DIR_PIN_DEFAULT 						MOTOR_DIR_Pin
-#define MOTOR_ENABLE_PORT_DEFAULT 					MOTOR_ENABLE_GPIO_Port
-#define MOTOR_ENABLE_PIN_DEFAULT 					MOTOR_ENABLE_Pin
 #define EMERGENCY_STEP_IMPULSES_TO_LIMIT_DEFAULT 	10000
 #define DIR_PIN_LOGIC_LEVEL_INVERTED_DEFAULT 		1
-#define MOTOR_TIMER_TICK_DURATION_MKS_DEFUALT 		5
-#define MOTOR_TIMER_TICKS_PER_SEC_DEFAULT 			200000
+#define MOTOR_TIMER_TICKS_PER_MS_DEFUALT 			200
 #define ACCELERATION_TYPE_DEFAULT 					LINEAR_ACCELERATION
 #define SHORT_DISTANCE_STEP_IMPULSES_DEFAULT 		100
 #define FAR_DISTANCE_STEP_IMPULSES_DEFAULT 			1826
-#define MIN_SPEED_MKS_PER_STEP_IMPULSE_DEFAULT 		300
-#define MAX_SPEED_MKS_PER_STEP_IMPULSE_DEFAULT 		100
+#define MIN_SPEED_STEP_PER_MS_DEFAULT 				3.138
+#define MAX_SPEED_STEP_PER_MS_DEFAULT 				7.746
 #define LINEAR_ACCELERATION_COEFFICIENT_DEFAULT 	0
 #define QUADRATIC_ACCELERATION_COEFFICIENT_DEFAULT 	0
-#define ACCELERATION_TIME_MS_DEFAULT 				50
+#define ACCELERATION_DURATION_MS_DEFAULT 			50
 
 
 typedef enum
@@ -90,12 +79,13 @@ typedef struct
 	InSignalAttributes_StructTypeDef button_signal;
 	SignalLogicLevel_EnumTypeDef button_released_default_signal_level;
 	uint32_t button_bounce_filter_counts;
-	uint32_t button_long_press_counts;
+	uint32_t button_long_press_ms;
 
 	ButtonState_EnumTypeDef button_current_state;
 	uint32_t button_pressing_duration_counter;
 
-} ButtonAttributes_TypeDef;
+} ButtonAttributes_StructTypeDef;
+
 /*
  * Концевик
  */
@@ -122,11 +112,11 @@ typedef struct
 	MotorAccelerationType_EnumTypeDef acceleration_type;
 	uint32_t short_distance_step_impulses;
 	uint32_t far_distance_step_impulses;
-	uint32_t min_speed_mks_per_step_impulse;
-	uint32_t max_speed_mks_per_step_impulse;
-	uint32_t linear_acceleration_coefficient;
+	float min_speed_step_per_ms;
+	float max_speed_step_per_ms;
+	float linear_acceleration_coefficient;
 	uint32_t quadratic_acceleration_coefficient;
-	uint32_t acceleration_time_ms;
+	uint32_t acceleration_duration_ms;
 
 } MotorMovementProfile_StructTypeDef;
 
@@ -143,8 +133,7 @@ typedef struct
 
 	int32_t emergency_step_impulses_to_limit;
 	_Bool DIR_pin_logic_level_inverted;
-	uint32_t motor_timer_tick_duration_MKS;
-	uint32_t motor_timer_ticks_per_sec;								// добавить автоматический перерасчёт
+	float motor_timer_ticks_per_ms;
 
 	/*
 	 * Величины, изменяемые по ходу движения
@@ -156,7 +145,7 @@ typedef struct
 	int32_t ticks_before_next_step_counter;							// ??? уточнить размер переменной
 	uint64_t ticks_since_start_movement_counter;
 	uint32_t step_impulses_since_start_movement_counter;
-	uint32_t speed_mks_per_step_impulse;
+	float current_speed_step_per_ms;
 	uint32_t ticks_for_acceleration_counter;
 	uint32_t step_impulses_for_acceleration_counter;
 	MotorMoveDirection_EnumTypeDef cyclic_movement_direction;
@@ -164,8 +153,10 @@ typedef struct
 } MotorObject_StructTypeDef;
 
 
+void set_output_signal_state(GPIO_TypeDef* GPIO_port_pointer, uint16_t pin_number, SignalLogicLevel_EnumTypeDef requied_logic_level);
 void check_input_signal_state(InSignalAttributes_StructTypeDef* signal_to_check);
-void check_and_update_button_state(ButtonAttributes_TypeDef* button_to_check);
+void button_init(ButtonAttributes_StructTypeDef* button_object);
+void check_and_update_button_state(ButtonAttributes_StructTypeDef* button_to_check, uint32_t ticks_per_sec);
 void motor_init(MotorObject_StructTypeDef* motor_object);
 void movement_profile_init(MotorMovementProfile_StructTypeDef* movement_profile);
 void motor_movement_init(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
@@ -176,9 +167,10 @@ void motor_check_counter_and_make_step_to_direction(MotorObject_StructTypeDef* m
 void motor_direction_pin_set(MotorObject_StructTypeDef* motor_object);
 void check_limit_switch_and_make_step(MotorObject_StructTypeDef* motor_object);
 void calculate_ticks_per_next_step(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
-int32_t movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
+float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
 _Bool limit_switch_return_state(MotorObject_StructTypeDef* motor_object);
 void check_input_signal_state(InSignalAttributes_StructTypeDef* signal_to_check);
 void step_toggle(MotorObject_StructTypeDef* motor_object);
+uint32_t convert_ms_to_ticks(uint32_t milliseconds, uint32_t ticks_per_ms);
 
 #endif /* INC_UNIVERSAL_EXTERN_LIB_1_H_ */
