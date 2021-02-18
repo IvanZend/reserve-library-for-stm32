@@ -150,6 +150,9 @@ void motor_movement_init(MotorObject_StructTypeDef* motor_object, MotorMovementP
 	reset_movement_counters(motor_object);
 }
 
+/*
+ * Рассчитываем коэффициент ускорения
+ */
 void calculate_acceleration_coefficient(MotorMovementProfile_StructTypeDef* movement_profile)
 {
 	movement_profile->linear_acceleration_coefficient = (movement_profile->max_speed_step_per_ms -  movement_profile->min_speed_step_per_ms)/movement_profile->acceleration_duration_ms;
@@ -190,6 +193,9 @@ void cyclic_movement_step(MotorObject_StructTypeDef* motor_object, MotorMovement
 	}
 }
 
+/*
+ * Сбрасываем счётчики движения
+ */
 void reset_movement_counters(MotorObject_StructTypeDef* motor_object)
 {
 	motor_object->ticks_before_next_step_counter = 0;
@@ -336,12 +342,12 @@ float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* mo
 	{
 	case (LINEAR_ACCELERATION):
 	{
-		calculated_speed_step_per_ms = ((ticks_value/motor_object->motor_timer_ticks_per_ms) * movement_profile->linear_acceleration_coefficient) + movement_profile->min_speed_step_per_ms;
+		calculated_speed_step_per_ms = ((ticks_value/motor_object->motor_timer_ticks_per_ms) * movement_profile->linear_acceleration_coefficient) + (movement_profile->min_speed_step_per_ms);
 		break;
 	}
 	case (QUADRATIC_ACCELERATION):
 	{
-		calculated_speed_step_per_ms = (pow((ticks_value/motor_object->motor_timer_ticks_per_ms), 2) * movement_profile->linear_acceleration_coefficient) + movement_profile->min_speed_step_per_ms;
+		calculated_speed_step_per_ms = (pow((ticks_value/motor_object->motor_timer_ticks_per_ms), 2) * movement_profile->linear_acceleration_coefficient) + (movement_profile->min_speed_step_per_ms);
 		break;
 	}
 	default:
