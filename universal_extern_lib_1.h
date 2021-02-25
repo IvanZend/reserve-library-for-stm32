@@ -10,6 +10,7 @@
 #define BUTTON_LONG_PRESS_COUNTS_DEFAULT 			20
 #define LIMIT_SWTICH_LOGIC_INVERTED_DEFAULT 		0
 #define EMERGENCY_STEP_IMPULSES_TO_LIMIT_DEFAULT 	10000
+#define STEP_IMPULSES_DEFAULT						4000
 #define DIR_PIN_LOGIC_LEVEL_INVERTED_DEFAULT 		1
 #define MOTOR_TIMER_TICKS_PER_MS_DEFUALT 			200
 #define ACCELERATION_TYPE_DEFAULT 					LINEAR_ACCELERATION
@@ -20,6 +21,7 @@
 #define LINEAR_ACCELERATION_COEFFICIENT_DEFAULT 	0
 #define QUADRATIC_ACCELERATION_COEFFICIENT_DEFAULT 	0
 #define ACCELERATION_DURATION_MS_DEFAULT 			50
+
 
 
 typedef enum
@@ -168,7 +170,7 @@ void motor_direction_pin_set(MotorObject_StructTypeDef* motor_object);
 void check_limit_switch_and_make_step(MotorObject_StructTypeDef* motor_object);
 void calculate_ticks_per_next_step(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
 float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
-_Bool limit_switch_return_state(MotorObject_StructTypeDef* motor_object);
+_Bool limit_switch_active(MotorObject_StructTypeDef* motor_object);
 void check_input_signal_state(InSignalAttributes_StructTypeDef* signal_to_check);
 void step_toggle(MotorObject_StructTypeDef* motor_object);
 uint32_t convert_ms_to_ticks(uint32_t milliseconds, uint32_t ticks_per_ms);

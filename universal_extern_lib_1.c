@@ -51,7 +51,6 @@ void button_init(ButtonAttributes_StructTypeDef* button_object)
 	button_object->button_pressing_duration_counter = 0;
 }
 
-
 /*
  * Проверяем состояние кнопки
  */
@@ -115,7 +114,7 @@ void motor_init(MotorObject_StructTypeDef* motor_object)
 	motor_object->DIR_pin_logic_level_inverted = DIR_PIN_LOGIC_LEVEL_INVERTED_DEFAULT;
 	motor_object->motor_timer_ticks_per_ms = MOTOR_TIMER_TICKS_PER_MS_DEFUALT;
 
-	motor_object->step_impulses_distance_from_limit_switch = 1;
+	motor_object->step_impulses_distance_from_limit_switch = STEP_IMPULSES_DEFAULT;
 	motor_object->limit_emergency_counter = 0;
 	motor_object->motor_movement_direction = MOVE_TO_COORD_END;
 	motor_object->step_pin_current_phase = STEP_LOW_PHASE;
@@ -277,11 +276,8 @@ void motor_direction_pin_set(MotorObject_StructTypeDef* motor_object)
  */
 void check_limit_switch_and_make_step(MotorObject_StructTypeDef* motor_object)
 {
-	/*
-//	 * если направление движения к начальному положению, и концевик не активен, и не пройдено аварийное количество шагов к начальному положению
-	 */
 	if ((motor_object->motor_movement_direction == MOVE_TO_COORD_ORIGIN) && \
-		(!(limit_switch_return_state(motor_object))) && \
+		(!limit_switch_active(motor_object)) && \
 		(motor_object->limit_emergency_counter < motor_object->emergency_step_impulses_to_limit))
 	{
 		step_toggle(motor_object);																				// совершаем шаг
@@ -363,35 +359,35 @@ float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* mo
 /*
  * опрашиваем и возрващаем состояние концевика
  */
-_Bool limit_switch_return_state(MotorObject_StructTypeDef* motor_object)
+_Bool limit_switch_active(MotorObject_StructTypeDef* motor_object)
 {
-	_Bool current_state;																			// флаг состояния концевика
-	check_input_signal_state(&motor_object->limit_switch.limit_switch_IN_signal);					// опрашиваем состояние пина концевика
-	if (motor_object->limit_switch.limit_switch_logic_inverted)										// если логический уровень концевика инвертирован аппаратно
+	_Bool current_state;																				// флаг состояния концевика
+	check_input_signal_state(&motor_object->limit_switch.limit_switch_IN_signal);						// опрашиваем состояние пина концевика
+	if (motor_object->limit_switch.limit_switch_logic_inverted)											// если логический уровень концевика инвертирован аппаратно
 	{
-		if (motor_object->limit_switch.limit_switch_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)			// если на пине концевика "0"
+		if (motor_object->limit_switch.limit_switch_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)	// если на пине концевика "0"
 		{
-			current_state = 1;																		// выставляем флаг концевика в "1"
-			motor_object->step_impulses_distance_from_limit_switch = 0;										// обнуляем счётчик расстояния до концевика
+			current_state = 1;																			// выставляем флаг концевика в "1"
+			motor_object->step_impulses_distance_from_limit_switch = 0;									// обнуляем счётчик расстояния до концевика
 		}
 		else
 		{
-			current_state = 0;																		// иначе выставляем флаг концевика в "0"
+			current_state = 0;																			// иначе выставляем флаг концевика в "0"
 		}
 	}
 	else
 	{
-		if (motor_object->limit_switch.limit_switch_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)			// иначе если на пине концевика "0"
+		if (motor_object->limit_switch.limit_switch_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)	// иначе если на пине концевика "0"
 		{
-			current_state = 0;																		// выставляем флаг концевика в "0"
+			current_state = 0;																			// выставляем флаг концевика в "0"
 		}
 		else
 		{
-			current_state = 1;																		// иначе выставляем флаг концевика в "1"
-			motor_object->step_impulses_distance_from_limit_switch = 0;												// обнуляем счётчик расстояния до концевика
+			current_state = 1;																			// иначе выставляем флаг концевика в "1"
+			motor_object->step_impulses_distance_from_limit_switch = 0;									// обнуляем счётчик расстояния до концевика
 		}
 	}
-	return current_state;																			// возвращаем флаг состояния концевика
+	return current_state;																				// возвращаем флаг состояния концевика
 }
 
 /*
