@@ -23,7 +23,6 @@
 #define ACCELERATION_DURATION_MS_DEFAULT 			50
 
 
-
 typedef enum
 {
 	MOVE_TO_COORD_ORIGIN,
@@ -112,8 +111,8 @@ typedef struct
 typedef struct
 {
 	MotorAccelerationType_EnumTypeDef acceleration_type;
-	uint32_t short_distance_step_impulses;
-	uint32_t far_distance_step_impulses;
+	int32_t short_distance_step_impulses;
+	int32_t far_distance_step_impulses;
 	float min_speed_step_per_ms;
 	float max_speed_step_per_ms;
 	float linear_acceleration_coefficient;
@@ -132,7 +131,7 @@ typedef struct
 	 */
 	LimitSwitch_StructTypeDef limit_switch;
 	MotorMovementSignals_StructTypeDef motor_signals;
-
+	int32_t step_impulses_acceptable_error;
 	int32_t emergency_step_impulses_to_limit;
 	_Bool DIR_pin_logic_level_inverted;
 	float motor_timer_ticks_per_ms;

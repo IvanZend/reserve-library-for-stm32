@@ -163,17 +163,31 @@ void calculate_acceleration_coefficient(MotorMovementProfile_StructTypeDef* move
  */
 void cyclic_movement_step(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile)
 {
-	if (motor_object->step_impulses_distance_from_limit_switch <= movement_profile->short_distance_step_impulses)					// если мы в крайней точке точке, ближайшей к начальному положению
+	if (motor_object->step_impulses_distance_from_limit_switch <= 0)// если мы в крайней точке, ближайшей к начальному положению
 	{
-		motor_object->cyclic_movement_direction = MOVE_TO_COORD_END;			// выставляем флаг движения от начального положения
-		motor_check_counter_and_make_step_to_direction(motor_object, movement_profile, MOVE_TO_COORD_END);											// делаем шаг в сторону от начального положения
-		reset_movement_counters(motor_object);
+		limit_switch_active(motor_object);
+		if (!limit_switch_active(motor_object))
+		{
+			motor_object->cyclic_movement_direction = MOVE_TO_COORD_ORIGIN;
+			motor_check_counter_and_make_step_to_direction(motor_object, movement_profile, MOVE_TO_COORD_ORIGIN);
+			if (motor_object->step_impulses_distance_from_limit_switch < (0 - (motor_object->step_impulses_acceptable_error)))
+			{
+				error_code = LIMIT_SWITCH_ERROR;
+				device_current_state = DEVICE_ERROR;
+			}
+		}
+		else
+		{
+			motor_object->cyclic_movement_direction = MOVE_TO_COORD_END;
+			motor_check_counter_and_make_step_to_direction(motor_object, movement_profile, MOVE_TO_COORD_END);
+			reset_movement_counters(motor_object);
+		}
 	}
 	/*
 	 * если мы находимся в промежутке между крайними положениями растра (ближнее и дальнее)
 	 */
-	if ((motor_object->step_impulses_distance_from_limit_switch > movement_profile->short_distance_step_impulses) && \
-			(motor_object->step_impulses_distance_from_limit_switch < movement_profile->far_distance_step_impulses))
+	if ((motor_object->step_impulses_distance_from_limit_switch > 0) && \
+		(motor_object->step_impulses_distance_from_limit_switch < movement_profile->far_distance_step_impulses))
 	{
 		if (motor_object->cyclic_movement_direction == MOVE_TO_COORD_END)		// если выставлен флаг движения от начального положения
 		{
@@ -276,19 +290,25 @@ void motor_direction_pin_set(MotorObject_StructTypeDef* motor_object)
  */
 void check_limit_switch_and_make_step(MotorObject_StructTypeDef* motor_object)
 {
-	if ((motor_object->motor_movement_direction == MOVE_TO_COORD_ORIGIN) && \
-		(!limit_switch_active(motor_object)) && \
-		(motor_object->limit_emergency_counter < motor_object->emergency_step_impulses_to_limit))
+	if (motor_object->motor_movement_direction == MOVE_TO_COORD_ORIGIN)
 	{
-		step_toggle(motor_object);																				// совершаем шаг
-		motor_object->step_impulses_distance_from_limit_switch = motor_object->step_impulses_distance_from_limit_switch - 1;		// декрементируем счётчик расстояния от начального положения
-		motor_object->limit_emergency_counter = motor_object->limit_emergency_counter + 1;							// инкрементируем аварийный счётчик шагов
+		if ((motor_object->limit_emergency_counter > motor_object->emergency_step_impulses_to_limit))
+		{
+			error_code = LIMIT_SWITCH_ERROR;								// выставляем ошибку концевика (решаем, что концевик неисправен)
+			device_current_state = DEVICE_ERROR;							// переключаем устройство в состояние ошибки
+		}
+		else
+		{
+			step_toggle(motor_object);																				// совершаем шаг
+			motor_object->step_impulses_distance_from_limit_switch = motor_object->step_impulses_distance_from_limit_switch - 1;		// декрементируем счётчик расстояния от начального положения
+			motor_object->limit_emergency_counter = motor_object->limit_emergency_counter + 1;						// инкрементируем аварийный счётчик шагов
+		}
 	}
 	if (motor_object->motor_movement_direction == MOVE_TO_COORD_END)											// если направлениение движения от начального положения
 	{
 		step_toggle(motor_object);																				// совершаем шаг
 		motor_object->step_impulses_distance_from_limit_switch = motor_object->step_impulses_distance_from_limit_switch + 1;		// инкрементируем счётчик расстояния от начального положения
-		motor_object->limit_emergency_counter = 0;															// обнуляем аварийный счётчик шагов
+		motor_object->limit_emergency_counter = 0;																// обнуляем аварийный счётчик шагов
 	}
 }
 
@@ -330,7 +350,6 @@ void calculate_ticks_per_next_step(MotorObject_StructTypeDef* motor_object, Moto
 	}
 }
 
-
 float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile)
 {
 	float calculated_speed_step_per_ms = 0;
@@ -354,7 +373,6 @@ float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* mo
 	}
 	return calculated_speed_step_per_ms;
 }
-
 
 /*
  * опрашиваем и возрващаем состояние концевика
@@ -418,4 +436,3 @@ uint32_t convert_ms_to_ticks(uint32_t seconds, uint32_t ticks_per_sec)
 	ticks_per_time = seconds*ticks_per_sec;
 	return ticks_per_time;
 }
-
